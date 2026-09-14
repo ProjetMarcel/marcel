@@ -35,7 +35,8 @@ async function envoyerMessage() {
         ajouterMessage(reponseAI, 'ai');
     } catch (error) {
         document.getElementById(loadingId).remove();
-        ajouterMessage("Erreur de liaison. Vérifie ta clé API en cliquant sur le statut en haut.", 'ai');
+        // ICI : On affiche la vraie erreur technique pour comprendre
+        ajouterMessage("ERREUR TECHNIQUE : " + error.message, 'ai');
     }
 }
 
