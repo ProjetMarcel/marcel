@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MARCEL // Cerveau Secondaire</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <h1>MARCEL // 5K-CORE</h1>
+        <div class="status-indicator" onclick="configurerCleAPI()" style="cursor: pointer;" title="Changer la clé API">
+            <div class="dot"></div>
+            <span id="status-text">ONLINE</span>
+        </div>
+    </header>
+
+    <div id="chat-container">
+        <div class="message ai">Système initialisé. Je suis Marcel, ton associé digital. Objectif : 5 000 €/mois. Envoie-moi tes directives, une idée de prospect dans les Vosges, ou demande ton plan d'action.</div>
+    </div>
+
+    <div class="quick-actions">
+        <button class="quick-btn" onclick="envoyerPromptPredefini('Donne-moi les 3 priorités absolues du jour pour notre objectif.')">⚡ Plan du Jour</button>
+        <button class="quick-btn" onclick="envoyerPromptPredefini('Fais un point sur notre trajectoire financière vers les 5000€/mois.')">📊 Trajectoire CA</button>
+        <button class="quick-btn" onclick="envoyerPromptPredefini('Propose-moi une stratégie de prospection pour les artisans dans les Vosges.')">🎯 Chasse Vosges</button>
+    </div>
+
+    <div class="input-area">
+        <input type="text" id="userInput" placeholder="Écris à Marcel..." onkeypress="verifierEntree(event)">
+        <button class="send-btn" onclick="envoyerMessage()">ENVOYER</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
