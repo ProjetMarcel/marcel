@@ -1,4 +1,4 @@
-const MODEL_NAME = "gemini-3.7-flash";
+const MODEL_NAME = "gemini-3.5-flash";
 
 // Récupération ou initialisation de la mémoire persistante de Marcel
 function getMemory() {
