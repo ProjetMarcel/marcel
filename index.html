@@ -2,34 +2,60 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MARCEL // Cerveau Secondaire</title>
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MARCEL</title>
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 </head>
 <body>
+    <!-- Coins HUD décoratifs -->
+    <div class="hud-corners">
+        <div class="corner tl"></div>
+        <div class="corner tr"></div>
+        <div class="corner bl"></div>
+        <div class="corner br"></div>
+    </div>
 
     <header>
-        <h1>MARCEL // 5K-CORE</h1>
-        <div class="status-indicator" onclick="configurerCleAPI()" style="cursor: pointer;" title="Changer la clé API">
+        <div class="hud-title">
+            <span class="system-status">SYS.ONLINE</span>
+            <h1>MARCEL // HUD v3.8</h1>
+        </div>
+        <div class="status-indicator" onclick="configurerCleAPI()" title="Changer la clé API">
             <div class="dot"></div>
-            <span id="status-text">ONLINE</span>
+            <span id="api-status-text">CORE LINK</span>
         </div>
     </header>
 
+    <!-- Bannière / Réacteur central visuel -->
+    <div class="hud-banner">
+        <div class="reactor-ring">
+            <div class="core-dot"></div>
+        </div>
+        <div class="telemetry">
+            <span>MODEL: GEMINI-3.8-FLASH</span>
+            <span>OBJECTIF: 5000€/MOIS</span>
+        </div>
+    </div>
+
+    <!-- Zone de discussion -->
     <div id="chat-container">
-        <div class="message ai">Système initialisé. Je suis Marcel, ton associé digital. Objectif : 5 000 €/mois. Envoie-moi tes directives, une idée de prospect dans les Vosges, ou demande ton plan d'action.</div>
+        <div class="message ai">
+            [SYSTEM INITIALIZED] Salutations, Boss. Interface J.A.R.V.I.S. activée. Prêt pour la machine à cash. Quelle est la mission ?
+        </div>
     </div>
 
+    <!-- Boutons d'action rapide -->
     <div class="quick-actions">
-        <button class="quick-btn" onclick="envoyerPromptPredefini('Donne-moi les 3 priorités absolues du jour pour notre objectif.')">⚡ Plan du Jour</button>
-        <button class="quick-btn" onclick="envoyerPromptPredefini('Fais un point sur notre trajectoire financière vers les 5000€/mois.')">📊 Trajectoire CA</button>
-        <button class="quick-btn" onclick="envoyerPromptPredefini('Propose-moi une stratégie de prospection pour les artisans dans les Vosges.')">🎯 Chasse Vosges</button>
+        <button class="quick-btn" onclick="envoyerPromptPredefini('Fais-moi un point stratégique pour atteindre les 5000€/mois.')">STRATÉGIE 5K</button>
+        <button class="quick-btn" onclick="envoyerPromptPredefini('Optimise ma fiche GBP et mes citations locales.')">AUDIT GBP</button>
+        <button class="quick-btn" onclick="envoyerPromptPredefini('Donne-moi une automatisation Python à lancer.')">SCRIPTS AUTO</button>
     </div>
 
+    <!-- Encart de saisie fixe en bas (garanti visible) -->
     <div class="input-area">
-        <input type="text" id="userInput" placeholder="Écris à Marcel..." onkeypress="verifierEntree(event)">
-        <button class="send-btn" onclick="envoyerMessage()">ENVOYER</button>
+        <input type="text" id="userInput" placeholder="Entrer une commande pour Marcel..." onkeypress="verifierEntree(event)">
+        <button class="send-btn" onclick="envoyerMessage()">EXÉCUTER</button>
     </div>
 
     <script src="script.js"></script>
