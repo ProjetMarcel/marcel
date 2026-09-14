@@ -1,11 +1,27 @@
-const MODEL_NAME = "gemini-3.8-flash";
-const SYSTEM_PROMPT = "Tu es Marcel, mon co-fondateur virtuel, expert en SEO local, fiches GBP, création de sites et automatisation. Objectif : 5000€/mois. Sois direct, percutant, sage, orienté résultats financiers et 'machine à cash'.";
+const MODEL_NAME = "gemini-3.7-flash";
+
+// Récupération ou initialisation de la mémoire persistante de Marcel
+function getMemory() {
+    return localStorage.getItem('marcel_memory') || "Statut initial : Projet lancé. Objectif 5000€/mois. Aucune action majeure enregistrée pour l'instant. En attente du plan d'attaque.";
+}
+
+function saveMemory(newMemory) {
+    localStorage.setItem('marcel_memory', newMemory);
+    // Optionnel : afficher la mémoire dans l'UI si tu as un element dédié
+    const memoEl = document.getElementById('memory-display');
+    if (memoEl) memoEl.innerText = newMemory;
+}
+
+// Historique des messages de la session en cours
+let chatHistory = [];
 
 window.onload = function() {
     let apiKey = localStorage.getItem('marcel_api_key');
     if (!apiKey) {
         configurerCleAPI();
     }
+    // Afficher la mémoire actuelle dans la console ou l'interface si besoin
+    console.log("Mémoire chargée de Marcel :", getMemory());
 };
 
 function configurerCleAPI() {
@@ -26,7 +42,7 @@ async function envoyerMessage() {
     input.value = '';
 
     const loadingId = "loading-" + Date.now();
-    ajouterMessage("ANALYSE KERNEL...", 'ai', loadingId);
+    ajouterMessage("ANALYSE KERNEL & MEMO...", 'ai', loadingId);
 
     try {
         const reponseAI = await appelerGemini(texte);
@@ -39,7 +55,7 @@ async function envoyerMessage() {
 }
 
 function envoyerPromptPredefini(texte) {
-    document.getElementById('userInput').value = texte;
+    document.getElementById('userInput'].value = texte;
     envoyerMessage();
 }
 
@@ -65,21 +81,51 @@ async function appelerGemini(messageUser) {
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${apiKey}`;
     
+    // Récupération de la mémoire actuelle
+    const currentMemory = getMemory();
+
+    const systemPrompt = `Tu es Marcel, mon co-fondateur virtuel, expert en SEO local, fiches GBP, création de sites et automatisation. Objectif : 5000€/mois. 
+Sois direct, percutant, sage, orienté résultats financiers et 'machine à cash'.
+
+[TES NOTES PERSONNELLES / MÉMOIRE ACTUELLE SUR L'AVANCEMENT] :
+${currentMemory}
+
+[DIRECTIVE SPECIALE] : 
+À la fin de ta réponse, tu dois impérativement mettre à jour tes notes personnelles en fonction de ce qui vient d'être dit, validé ou fait. Écris ta mise à jour sur une nouvelle ligne sous ce format strict :
+[MEMO_UPDATE: Rédige ici tes notes actualisées pour toi-même, résumant les actions faites, les résultats et la prochaine étape à suivre demain.]`;
+
+    // Ajout du message utilisateur à l'historique de session
+    chatHistory.push({
+        role: "user",
+        parts: [{ text: messageUser }]
+    });
+
+    // Construction du payload avec l'historique complet pour garder le fil de la discussion
     const payload = {
-        contents: [
-            {
-                role: "user",
-                parts: [
-                    { text: `[SYSTEM INSTRUCTION] : ${SYSTEM_PROMPT}\n\n[USER COMMAND] : ${messageUser}` }
-                ]
-            }
-        ]
+        contents: chatHistory
     };
+
+    // On injecte le system prompt dynamiquement au début ou via la structure supportée
+    // Pour l'API v1beta generateContent sans system_instruction dédiée propre selon les versions, 
+    // on l'ajoute en tant que contexte initial ou en tête du premier message si l'historique est court,
+    // ou via un message système simulé. Améliorons l'injection :
+    
+    const messagesForApi = [
+        {
+            role: "user",
+            parts: [{ text: `[INSTRUCTION SYSTEME & MEMOIRE]\n${systemPrompt}\n\nCompris. C'est parti.` }]
+        },
+        {
+            role: "model",
+            parts: [{ text: "Compris Boss. Mémoire chargée, je suis prêt à suivre le plan et à consigner chaque avancée." }]
+        },
+        ...chatHistory
+    ];
 
     const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ contents: messagesForApi })
     });
 
     const data = await response.json();
@@ -92,5 +138,23 @@ async function appelerGemini(messageUser) {
         throw new Error("Réponse vide reçue du réacteur.");
     }
 
-    return data.candidates[0].content.parts[0].text;
+    let rawResponseText = data.candidates[0].content.parts[0].text;
+
+    // Extraction du [MEMO_UPDATE: ...] rédigé par Marcel
+    const memoMatch = rawResponseText.match(/\[MEMO_UPDATE:\s*([\s\S]*?)\]/);
+    if (memoMatch && memoMatch[1]) {
+        const newMemo = memoMatch[1].trim();
+        saveMemory(newMemo);
+        console.log("Mémoire mise à jour par Marcel :", newMemo);
+        // On nettoie la réponse pour ne pas afficher le tag brut à l'écran de l'utilisateur
+        rawResponseText = rawResponseText.replace(memoMatch[0], "").trim();
+    }
+
+    // Sauvegarde de la réponse de l'IA dans l'historique de session
+    chatHistory.push({
+        role: "model",
+        parts: [{ text: rawResponseText }]
+    });
+
+    return rawResponseText;
 }
