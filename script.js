@@ -10,10 +10,10 @@ window.onload = function() {
 
 function configurerCleAPI() {
     let currentKey = localStorage.getItem('marcel_api_key') || '';
-    let nouvelleCle = prompt("Entre ta clé API Google AI Studio pour Marcel :", currentKey);
+    let nouvelleCle = prompt("J.A.R.V.I.S. // Entre ta clé API Google AI Studio :", currentKey);
     if (nouvelleCle && nouvelleCle.trim() !== "") {
         localStorage.setItem('marcel_api_key', nouvelleCle.trim());
-        alert("Clé enregistrée dans ton navigateur !");
+        alert("Clé enregistrée dans le noyau !");
     }
 }
 
@@ -26,7 +26,7 @@ async function envoyerMessage() {
     input.value = '';
 
     const loadingId = "loading-" + Date.now();
-    ajouterMessage("Marcel analyse...", 'ai', loadingId);
+    ajouterMessage("ANALYSE KERNEL...", 'ai', loadingId);
 
     try {
         const reponseAI = await appelerGemini(texte);
@@ -34,7 +34,7 @@ async function envoyerMessage() {
         ajouterMessage(reponseAI, 'ai');
     } catch (error) {
         document.getElementById(loadingId).remove();
-        ajouterMessage("ERREUR : " + error.message, 'ai');
+        ajouterMessage("ERREUR KERNEL : " + error.message, 'ai');
     }
 }
 
@@ -60,18 +60,17 @@ function ajouterMessage(texte, type, id = null) {
 async function appelerGemini(messageUser) {
     const apiKey = localStorage.getItem('marcel_api_key');
     if (!apiKey) {
-        throw new Error("Clé API manquante. Clique sur le statut en haut pour la configurer.");
+        throw new Error("Clé API manquante. Clique sur 'CORE LINK' en haut pour la configurer.");
     }
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${apiKey}`;
     
-    // Structure de payload compatible REST direct
     const payload = {
         contents: [
             {
                 role: "user",
                 parts: [
-                    { text: `[INSTRUCTION SYSTEME - RÔLE] : ${SYSTEM_PROMPT}\n\n[MESSAGE DE L'UTILISATEUR] : ${messageUser}` }
+                    { text: `[SYSTEM INSTRUCTION] : ${SYSTEM_PROMPT}\n\n[USER COMMAND] : ${messageUser}` }
                 ]
             }
         ]
@@ -86,11 +85,11 @@ async function appelerGemini(messageUser) {
     const data = await response.json();
     
     if (data.error) {
-        throw new Error(data.error.message || "Erreur inconnue de l'API");
+        throw new Error(data.error.message || "Erreur de liaison API");
     }
     
     if (!data.candidates || data.candidates.length === 0) {
-        throw new Error("Aucune réponse reçue du modèle.");
+        throw new Error("Réponse vide reçue du réacteur.");
     }
 
     return data.candidates[0].content.parts[0].text;
