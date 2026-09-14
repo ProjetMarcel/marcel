@@ -1,4 +1,10 @@
-const MODEL_NAME = "gemini-3.5-flash";
+// Liste de secours privilégiant les versions LITE (ultra-disponibles en version gratuite)
+const MODELS_TO_TRY = [
+    "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
+    "gemini-2.5-flash",
+    "gemini-3.5-flash"
+];
 
 // Récupération ou initialisation de la mémoire persistante de Marcel
 function getMemory() {
@@ -79,11 +85,7 @@ async function appelerGemini(messageUser) {
         throw new Error("Clé API manquante. Clique sur 'CORE LINK' en haut pour la configurer.");
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${apiKey}`;
-    
-    // Récupération de la mémoire actuelle
     const currentMemory = getMemory();
-
     const systemPrompt = `Tu es Marcel, mon co-fondateur virtuel, expert en SEO local, fiches GBP, création de sites et automatisation. Objectif : 5000€/mois. 
 Sois direct, percutant, sage, orienté résultats financiers et 'machine à cash'.
 
@@ -94,7 +96,6 @@ ${currentMemory}
 À la fin de ta réponse, tu dois impérativement mettre à jour tes notes personnelles en fonction de ce qui vient d'être dit, validé ou fait. Écris ta mise à jour sur une nouvelle ligne sous ce format strict :
 [MEMO_UPDATE: Rédige ici tes notes actualisées pour toi-même, résumant les actions faites, les résultats et la prochaine étape à suivre demain.]`;
 
-    // Ajout du message utilisateur à l'historique de session
     chatHistory.push({
         role: "user",
         parts: [{ text: messageUser }]
@@ -112,37 +113,47 @@ ${currentMemory}
         ...chatHistory
     ];
 
-    const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: messagesForApi })
-    });
+    let lastError = null;
 
-    const data = await response.json();
-    
-    if (data.error) {
-        throw new Error(data.error.message || "Erreur de liaison API");
+    // Teste chaque modèle un par un jusqu'à trouver celui qui répond
+    for (const model of MODELS_TO_TRY) {
+        try {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+            
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: messagesForApi })
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                lastError = new Error(data.error.message);
+                continue; // Passe au modèle suivant en cas d'erreur/quota
+            }
+
+            if (data.candidates && data.candidates.length > 0) {
+                let rawResponseText = data.candidates[0].content.parts[0].text;
+
+                const memoMatch = rawResponseText.match(/\[MEMO_UPDATE:\s*([\s\S]*?)\]/);
+                if (memoMatch && memoMatch[1]) {
+                    saveMemory(memoMatch[1].trim());
+                    rawResponseText = rawResponseText.replace(memoMatch[0], "").trim();
+                }
+
+                chatHistory.push({
+                    role: "model",
+                    parts: [{ text: rawResponseText }]
+                });
+
+                return rawResponseText;
+            }
+        } catch (e) {
+            lastError = e;
+        }
     }
-    
-    if (!data.candidates || data.candidates.length === 0) {
-        throw new Error("Réponse vide reçue du réacteur.");
-    }
 
-    let rawResponseText = data.candidates[0].content.parts[0].text;
-
-    // Extraction du [MEMO_UPDATE: ...] rédigé par Marcel
-    const memoMatch = rawResponseText.match(/\[MEMO_UPDATE:\s*([\s\S]*?)\]/);
-    if (memoMatch && memoMatch[1]) {
-        const newMemo = memoMatch[1].trim();
-        saveMemory(newMemo);
-        rawResponseText = rawResponseText.replace(memoMatch[0], "").trim();
-    }
-
-    // Sauvegarde de la réponse de l'IA dans l'historique de session
-    chatHistory.push({
-        role: "model",
-        parts: [{ text: rawResponseText }]
-    });
-
-    return rawResponseText;
+    chatHistory.pop();
+    throw lastError || new Error("Tous les modèles sont temporairement indisponibles.");
 }
