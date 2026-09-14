@@ -7,9 +7,7 @@ function getMemory() {
 
 function saveMemory(newMemory) {
     localStorage.setItem('marcel_memory', newMemory);
-    // Optionnel : afficher la mémoire dans l'UI si tu as un element dédié
-    const memoEl = document.getElementById('memory-display');
-    if (memoEl) memoEl.innerText = newMemory;
+    console.log("Mémoire mise à jour :", newMemory);
 }
 
 // Historique des messages de la session en cours
@@ -20,8 +18,6 @@ window.onload = function() {
     if (!apiKey) {
         configurerCleAPI();
     }
-    // Afficher la mémoire actuelle dans la console ou l'interface si besoin
-    console.log("Mémoire chargée de Marcel :", getMemory());
 };
 
 function configurerCleAPI() {
@@ -35,6 +31,7 @@ function configurerCleAPI() {
 
 async function envoyerMessage() {
     const input = document.getElementById('userInput');
+    if (!input) return;
     const texte = input.value.trim();
     if (!texte) return;
 
@@ -55,8 +52,11 @@ async function envoyerMessage() {
 }
 
 function envoyerPromptPredefini(texte) {
-    document.getElementById('userInput'].value = texte;
-    envoyerMessage();
+    const input = document.getElementById('userInput');
+    if (input) {
+        input.value = texte;
+        envoyerMessage();
+    }
 }
 
 function verifierEntree(e) {
@@ -100,16 +100,6 @@ ${currentMemory}
         parts: [{ text: messageUser }]
     });
 
-    // Construction du payload avec l'historique complet pour garder le fil de la discussion
-    const payload = {
-        contents: chatHistory
-    };
-
-    // On injecte le system prompt dynamiquement au début ou via la structure supportée
-    // Pour l'API v1beta generateContent sans system_instruction dédiée propre selon les versions, 
-    // on l'ajoute en tant que contexte initial ou en tête du premier message si l'historique est court,
-    // ou via un message système simulé. Améliorons l'injection :
-    
     const messagesForApi = [
         {
             role: "user",
@@ -145,8 +135,6 @@ ${currentMemory}
     if (memoMatch && memoMatch[1]) {
         const newMemo = memoMatch[1].trim();
         saveMemory(newMemo);
-        console.log("Mémoire mise à jour par Marcel :", newMemo);
-        // On nettoie la réponse pour ne pas afficher le tag brut à l'écran de l'utilisateur
         rawResponseText = rawResponseText.replace(memoMatch[0], "").trim();
     }
 
