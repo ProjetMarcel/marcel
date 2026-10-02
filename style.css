@@ -93,3 +93,23 @@ input[type=text]:focus{border-color:var(--c);box-shadow:var(--gc)}
 
 :focus-visible{outline:2px solid var(--c);outline-offset:2px}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* ===== v6 ===== */
+nav button{font-size:.62rem;padding:11px 2px}#ind{width:20%}
+#al{display:none;gap:6px;overflow-x:auto;padding:6px 12px;flex-shrink:0;position:relative;z-index:1;background:rgba(2,6,23,.8);border-bottom:1px solid rgba(189,0,255,.3)}
+.chip{flex:none;background:rgba(189,0,255,.12);border:1px solid var(--p);color:#e9c4ff;font:inherit;font-size:.65rem;padding:4px 9px;border-radius:99px;cursor:pointer;animation:glowp 2s infinite}
+.chip.on{border-color:var(--c);color:var(--c);background:rgba(0,240,255,.1)}
+@keyframes glowp{50%{box-shadow:0 0 10px rgba(189,0,255,.7)}}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.tiles div{padding:10px;border:1px solid rgba(0,240,255,.3);background:rgba(0,240,255,.05);font-size:.65rem;color:var(--d);animation:pop .5s both}
+.tiles b{display:block;font-family:'Orbitron',sans-serif;font-size:1.3rem;color:var(--c);text-shadow:var(--gc)}
+.bar{position:relative;height:10px;border:1px solid var(--c);margin:6px 0}
+.bar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,var(--c),var(--p));box-shadow:var(--gc);animation:grow 1.6s cubic-bezier(.2,.8,.2,1)}
+.bar u{position:absolute;top:-5px;bottom:-5px;width:2px;background:#fff}
+@keyframes grow{from{width:0}}
+.row{display:flex;gap:6px;flex-wrap:wrap}.row input{min-width:90px}
+.panel label,.note{font-size:.65rem;color:var(--d);line-height:1.4}
+select{background:#000;color:#fff;border:1px solid var(--d);font:inherit;font-size:.8rem;padding:8px;border-radius:2px;max-width:40%}
+.lead b{display:block;margin:2px 0 6px}
+.steps{display:flex;gap:4px;margin-bottom:6px}.steps i{flex:1;height:4px;background:rgba(100,116,139,.4)}.steps i.on{background:var(--c);box-shadow:var(--gc)}
+.mic.rec{border-color:var(--p);color:var(--p);animation:pulse 1s infinite}
