@@ -20,7 +20,7 @@ if (!start) { start = iso(new Date()); localStorage.setItem('marcel_start', star
 let plan = J('marcel_plan', {}), chat = J('marcel_chat', []), sel = 0;
 
 const dayNum = () => Math.min(N, Math.max(1, Math.round((new Date(iso(new Date())) - new Date(start)) / 864e5) + 1));
-const task = n => plan[n]?.t || TPL[(n - 1) % 7];
+const task = n => plan[n]?.t || PB[pid(n)]?.t || TPL[(n - 1) % 7];
 const done = n => !!plan[n]?.d;
 const setPlan = (n, p) => { plan[n] = { ...plan[n], ...p }; S('marcel_plan', plan); };
 const getMemory = () => localStorage.getItem('marcel_memory') || "Statut initial : projet lancé. Objectif 5000€/mois. Aucune action enregistrée. En attente du plan d'attaque.";
@@ -63,6 +63,7 @@ function renderDetail() {
     $('detail').innerHTML = `<div class="dh"><b>JOUR ${n}</b><span>${d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</span></div>
 <p class="ph">M${Math.floor((n - 1) / 30) + 1} · ${PH[Math.floor((n - 1) / 30)][1]}</p>
 <input type="text" id="dt" value="${esc(task(n))}">
+${pbHTML(n)}
 <button class="send-btn" onclick="toggle(${n})">${done(n) ? 'ANNULER LA VALIDATION' : 'VALIDER LE JOUR ✓'}</button>`;
     $('dt').onchange = e => setPlan(n, { t: e.target.value.trim() });
 }
@@ -217,7 +218,7 @@ window.onload = () => {
 /* ===== v6 : cap financier, parrainage, alertes, notifications ===== */
 const OBJ = [500, 1200, 2000, 3000, 4000, 5000];
 const ST = ['RECOMMANDÉ', 'CONTACTÉ', 'SIGNÉ', '1er MOIS PAYÉ'];
-let cfg = J('marcel_cfg', { prix: 200, mrr: 0, conv: 10 }), ref = J('marcel_ref', { amb: [], lead: [] });
+let cfg = J('marcel_cfg', { prix: 200, mrr: 0, conv: 3 }), ref = J('marcel_ref', { amb: [], lead: [] });
 const expd = t => { const m = Math.floor((t - 1) / 30), a = m ? OBJ[m - 1] : 0; return a + (OBJ[m] - a) * (((t - 1) % 30) + 1) / 30; };
 const go = v => document.querySelector(`nav button[data-v="${v}"]`).click();
 const saveRef = () => S('marcel_ref', ref);
@@ -299,7 +300,7 @@ function renderCap() {
 <p class="note">Le prix et le taux de closing sont des hypothèses : remplace-les par tes vrais chiffres. Caps de fin de mois : ${OBJ.join(' / ')} €.</p></div>`;
 }
 function saveCfg() {
-    cfg = { prix: Math.max(1, +$('c-p').value || 200), mrr: Math.max(0, +$('c-m').value || 0), conv: Math.min(100, Math.max(1, +$('c-c').value || 10)) };
+    cfg = { prix: Math.max(1, +$('c-p').value || 200), mrr: Math.max(0, +$('c-m').value || 0), conv: Math.min(100, Math.max(1, +$('c-c').value || 3)) };
     S('marcel_cfg', cfg); renderCap(); renderStats();
 }
 
