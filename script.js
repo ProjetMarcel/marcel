@@ -13,7 +13,7 @@ const PH = [
     ["SCALE", "Doubler les clients, installer la récurrence"],
     ["5000€/MOIS", "Optimiser les marges, upsell, stabiliser"]
 ];
-const TPL = ["Prospection : 10 contacts", "Création site / contenu", "Suivi clients et relances", "Audit GBP et SEO local", "Automatisation / script", "Bilan hebdo et chiffres", "Repos stratégique"];
+const TPL = ["Prospection : 10 contacts qualifiés + 3 relances", "Livraison clients : GBP / site / SEO", "Parrainage : relancer 3 ambassadeurs", "Prospection : 10 contacts + 1 RDV démo", "Preuves : avis, avant/après, cas client", "Closing : RDV, devis, signatures", "Bilan chiffres + préparer la semaine"];
 
 let start = localStorage.getItem('marcel_start');
 if (!start) { start = iso(new Date()); localStorage.setItem('marcel_start', start); }
@@ -46,7 +46,7 @@ function renderPlan(anim = true) {
     for (let m = 0; m < 6; m++) {
         const a = m * 30 + 1; let d = 0;
         for (let i = a; i < a + 30; i++) if (done(i)) d++;
-        h += `<div class="month" style="--i:${m}"><div class="mh"><b>M${m + 1} · ${PH[m][0]}</b><span>${d}/30</span></div><p>${PH[m][1]}</p><div class="cells">`;
+        h += `<div class="month" style="--i:${m}"><div class="mh"><b>M${m + 1} · ${PH[m][0]}</b><span>${d}/30</span></div><p>${PH[m][1]} · cap ${OBJ[m]} €</p><div class="cells">`;
         for (let i = a; i < a + 30; i++) {
             const c = done(i) ? 'ok' : i < t ? 'miss' : i == t ? 'now' : '';
             h += `<button class="cell ${c} ${i == sel ? 'sel' : ''}" style="--i:${i - a}" onclick="pick(${i})">${i}</button>`;
@@ -132,6 +132,7 @@ async function appelerGemini() {
     const sys = `Tu es Marcel, mon co-fondateur virtuel, expert en SEO local, fiches GBP, création de sites et automatisation. Objectif : 5000€/mois en 6 mois. Sois direct, percutant, sage, orienté résultats financiers.
 [MÉMOIRE ACTUELLE] ${getMemory()}
 [PLAN] Aujourd'hui = jour ${t}/${N}, phase ${PH[Math.floor((t - 1) / 30)][0]}. Tâche du jour : ${task(t)}. Jours validés : ${c}. Série : ${s}.
+${ctx()}
 [DIRECTIVES] À la fin de ta réponse, sur de nouvelles lignes :
 - si tu définis ou modifies la tâche d'un jour : [PLAN: numéro_du_jour | tâche] (une balise par jour)
 - si j'indique avoir terminé un jour : [DONE: numéro_du_jour]
@@ -211,4 +212,155 @@ window.onload = () => {
     sel = dayNum();
     if (chat.length) chat.forEach(m => bubble(m.r, m.t)); else bubble('model', "[SYSTEM INITIALIZED] Salut Boss. Interface J.A.R.V.I.S. activée. Prêt pour la machine à cash. Quelle est la mission ?");
     renderStats(); renderPlan(true);
+};
+
+/* ===== v6 : cap financier, parrainage, alertes, notifications ===== */
+const OBJ = [500, 1200, 2000, 3000, 4000, 5000];
+const ST = ['RECOMMANDÉ', 'CONTACTÉ', 'SIGNÉ', '1er MOIS PAYÉ'];
+let cfg = J('marcel_cfg', { prix: 200, mrr: 0, conv: 10 }), ref = J('marcel_ref', { amb: [], lead: [] });
+const expd = t => { const m = Math.floor((t - 1) / 30), a = m ? OBJ[m - 1] : 0; return a + (OBJ[m] - a) * (((t - 1) % 30) + 1) / 30; };
+const go = v => document.querySelector(`nav button[data-v="${v}"]`).click();
+const saveRef = () => S('marcel_ref', ref);
+
+function ctx() {
+    const pd = ref.lead.filter(l => l.st == 3).length;
+    return `[CAP] MRR actuel ${cfg.mrr}€, prix moyen ${cfg.prix}€/mois, objectif 5000€. [PARRAINAGE] Règles : ambassadeur client = 1 mois de prestation offert quand un pro recommandé signe et paie son 1er mois ; ambassadeur proche = 50€ cash ; le nouveau client a 50€ de réduction sur son 1er mois. ${ref.amb.length} ambassadeurs, ${ref.lead.length} recommandations, ${pd} payées.`;
+}
+
+function alerts() {
+    const { t, s } = stats(), a = [], h = new Date().getHours(), now = Date.now();
+    if (!done(t) && h >= 17) a.push({ t: s > 2 ? `Série de ${s} jours en danger` : `Jour ${t} à valider`, v: 'plan' });
+    let m = 0; for (let i = Math.max(1, t - 7); i < t; i++) if (!done(i)) m++;
+    if (m >= 3) a.push({ t: `${m} jours ratés sur 7`, v: 'plan' });
+    const e = expd(t); if (cfg.mrr < e * .8) a.push({ t: `MRR ${cfg.mrr}€ vs ${Math.round(e)}€ attendus`, v: 'cap' });
+    if (!ref.amb.length) a.push({ t: 'Ajoute tes premiers ambassadeurs', v: 'ref' });
+    ref.lead.filter(l => l.st < 2 && now - l.u > 2592e5).forEach(l => a.push({ t: `Relancer ${l.n}`, v: 'ref' }));
+    const due = ref.lead.filter(l => l.st == 3 && !l.r).length;
+    if (due) a.push({ t: `${due} récompense${due > 1 ? 's' : ''} à honorer`, v: 'ref' });
+    return a;
+}
+
+function renderAlerts() {
+    let el = $('al');
+    if (!el) { el = document.createElement('div'); el.id = 'al'; document.querySelector('.hud-banner').after(el); }
+    const a = alerts();
+    let h = ('Notification' in window && Notification.permission != 'granted') ? '<button class="chip on" onclick="activerNotifs()">ACTIVER LES NOTIFS</button>' : '';
+    h += a.map(x => `<button class="chip" onclick="go('${x.v}')">${esc(x.t)}</button>`).join('');
+    el.innerHTML = h; el.style.display = h ? 'flex' : 'none';
+    a.length ? navigator.setAppBadge?.(a.length) : navigator.clearAppBadge?.();
+}
+const _rs = renderStats; renderStats = () => { _rs(); renderAlerts(); };
+
+async function notif(t, b) {
+    if (!('Notification' in window) || Notification.permission != 'granted') return;
+    const r = await navigator.serviceWorker?.getRegistration();
+    r ? r.showNotification(t, { body: b, icon: 'icon.svg', badge: 'icon.svg', tag: t }) : new Notification(t, { body: b, icon: 'icon.svg' });
+}
+async function activerNotifs() {
+    if ('serviceWorker' in navigator) await navigator.serviceWorker.register('sw.js').catch(() => { });
+    if (await Notification.requestPermission() == 'granted') notif('MARCEL', 'Alertes actives : briefing à 9h, bilan à 18h.');
+    renderAlerts();
+}
+function tick() {
+    const d = new Date(), k = iso(d), h = d.getHours();
+    [[9, 'MATIN'], [18, 'SOIR']].forEach(([H, n]) => {
+        const key = 'marcel_n_' + n;
+        if (h >= H && h < H + 4 && localStorage.getItem(key) != k) {
+            localStorage.setItem(key, k); const a = alerts().map(x => x.t).join('\n');
+            notif(n == 'MATIN' ? `Jour ${dayNum()} · ${task(dayNum())}` : 'Bilan du soir', a || 'Rien en retard. Valide ta journée.');
+        }
+    });
+}
+
+function ics() {
+    let o = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//MARCEL//FR\r\n';
+    for (let n = 1; n <= N; n++) {
+        const d = new Date(start); d.setDate(d.getDate() + n - 1);
+        const D = iso(d).replace(/-/g, '');
+        o += `BEGIN:VEVENT\r\nUID:marcel-${n}@hud\r\nDTSTAMP:${D}T000000Z\r\nDTSTART:${D}T090000\r\nDTEND:${D}T093000\r\nSUMMARY:Marcel J${n} · ${task(n).replace(/[,;\n]/g, ' ')}\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nDESCRIPTION:Marcel J${n}\r\nTRIGGER:PT0S\r\nEND:VALARM\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nDESCRIPTION:Valide ta journée J${n}\r\nTRIGGER:PT9H30M\r\nEND:VALARM\r\nEND:VEVENT\r\n`;
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([o + 'END:VCALENDAR'], { type: 'text/calendar' }));
+    a.download = 'marcel-plan.ics'; a.click();
+}
+
+function renderCap() {
+    const { t } = stats(), e = expd(t), p = Math.min(100, cfg.mrr / 50), reste = Math.max(0, 5000 - cfg.mrr);
+    const mois = Math.max(1, 6 - (t - 1) / 30), pm = Math.ceil(reste / cfg.prix / mois), ct = Math.ceil(pm / (cfg.conv / 100) / 4.3);
+    $('v-cap').innerHTML = `<div class="scroll"><div class="panel"><div class="dh"><b>CAP 5000 €/MOIS</b><span>attendu J${t} : ${Math.round(e)} €</span></div>
+<div class="bar"><i style="width:${p}%"></i><u style="left:${Math.min(100, e / 50)}%"></u></div>
+<div class="dh"><span>MRR actuel : ${cfg.mrr} €</span><span>${Math.round(p)}%</span></div></div>
+<div class="tiles"><div><b>${Math.ceil(reste / cfg.prix)}</b>clients à signer</div><div><b>${pm}</b>signatures / mois</div><div><b>${ct}</b>contacts / semaine</div><div><b>${Math.ceil(5000 / cfg.prix)}</b>clients au total</div></div>
+<div class="panel"><label>MRR actuel (€/mois)</label><input type="text" inputmode="numeric" id="c-m" value="${cfg.mrr}">
+<label>Prix moyen d'un client (€/mois)</label><input type="text" inputmode="numeric" id="c-p" value="${cfg.prix}">
+<label>Taux de closing (% de contacts qui signent)</label><input type="text" inputmode="numeric" id="c-c" value="${cfg.conv}">
+<button class="send-btn" onclick="saveCfg()">ENREGISTRER</button>
+<button class="quick-btn" onclick="ics()">EXPORTER LE PLAN VERS MON CALENDRIER (.ics)</button></div>
+<p class="note">Le prix et le taux de closing sont des hypothèses : remplace-les par tes vrais chiffres. Caps de fin de mois : ${OBJ.join(' / ')} €.</p></div>`;
+}
+function saveCfg() {
+    cfg = { prix: Math.max(1, +$('c-p').value || 200), mrr: Math.max(0, +$('c-m').value || 0), conv: Math.min(100, Math.max(1, +$('c-c').value || 10)) };
+    S('marcel_cfg', cfg); renderCap(); renderStats();
+}
+
+function renderRef() {
+    const A = ref.amb, L = ref.lead, am = id => A.find(a => a.id == id) || { nom: '?', type: 'client' }, cl = l => am(l.a).type == 'client';
+    const pd = L.filter(l => l.st == 3), cred = pd.filter(l => !l.r && cl(l)).length, cash = pd.filter(l => !l.r && !cl(l)).length * 50;
+    const cost = pd.length * 50 + pd.filter(cl).length * cfg.prix + pd.filter(l => !cl(l)).length * 50;
+    $('v-ref').innerHTML = `<div class="scroll"><div class="tiles"><div><b>${cred}</b>mois à offrir</div><div><b>${cash} €</b>à virer</div><div><b>${pd.length * cfg.prix} €</b>MRR apporté</div><div><b>${cost} €</b>coût du programme</div></div>
+<div class="panel"><div class="dh"><b>AMBASSADEURS · ${A.length}</b></div><div class="row"><input type="text" id="an" placeholder="Nom"><select id="at"><option value="client">client</option><option value="proche">proche</option></select><button class="quick-btn" onclick="addAmb()">AJOUTER</button></div>
+<div class="row"><button class="quick-btn" onclick="pitch('client')">PITCH CLIENT</button><button class="quick-btn" onclick="pitch('proche')">PITCH PROCHE</button></div></div>
+<div class="panel"><div class="dh"><b>RECOMMANDATIONS · ${L.length}</b></div>${A.length ? `<div class="row"><input type="text" id="ln" placeholder="Pro recommandé"><select id="la">${A.map(a => `<option value="${a.id}">${esc(a.nom)}</option>`).join('')}</select><button class="quick-btn" onclick="addLead()">AJOUTER</button></div>` : '<p class="ph">Ajoute d\'abord un ambassadeur.</p>'}</div>
+${L.map(l => `<div class="hi lead"><small>via ${esc(am(l.a).nom)} · ${am(l.a).type}</small><b>${esc(l.n)}</b><div class="steps">${ST.map((s, i) => `<i class="${i <= l.st ? 'on' : ''}"></i>`).join('')}</div><div class="row"><button class="quick-btn" onclick="adv(${l.id})">${ST[l.st]}${l.st < 3 ? ' → ' + ST[l.st + 1] : ''}</button>${l.st == 3 ? `<button class="quick-btn" onclick="rw(${l.id})">${l.r ? 'RÉCOMPENSE FAITE ✓' : cl(l) ? 'MOIS OFFERT À ACCORDER' : 'VIREMENT 50 € À FAIRE'}</button>` : ''}</div></div>`).join('')}</div>`;
+}
+function addAmb() { const n = $('an').value.trim(); if (!n) return; ref.amb.push({ id: Date.now(), nom: n, type: $('at').value }); saveRef(); renderRef(); renderStats(); }
+function addLead() { const n = $('ln').value.trim(); if (!n) return; ref.lead.push({ id: Date.now(), n, a: +$('la').value, st: 0, u: Date.now() }); saveRef(); renderRef(); renderStats(); }
+function adv(id) {
+    const l = ref.lead.find(x => x.id == id); if (l.st >= 3) return;
+    l.st++; l.u = Date.now(); saveRef();
+    if (l.st == 3) { boom(); navigator.vibrate?.(80); }
+    renderRef(); renderStats();
+}
+function rw(id) { const l = ref.lead.find(x => x.id == id); l.r = !l.r; saveRef(); renderRef(); renderStats(); }
+function pitch(type) {
+    const t = type == 'client'
+        ? "Salut ! Tu connais un pro (commerçant, artisan…) qui voudrait plus de clients grâce à Google ? Présente-le moi : dès qu'il s'abonne, ton mois de prestation est offert, et lui profite de 50 € de réduction sur son 1er mois."
+        : "Salut ! Si tu connais un pro qui veut plus de clients grâce à Google, présente-le moi : dès qu'il signe et paie son 1er mois, je te vire 50 € et lui a 50 € de réduction.";
+    navigator.clipboard?.writeText(t);
+    window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank');
+}
+
+function boom() {
+    const c = document.createElement('canvas'); c.style.cssText = 'position:fixed;inset:0;z-index:30;pointer-events:none';
+    c.width = innerWidth; c.height = innerHeight; document.body.append(c);
+    const x = c.getContext('2d'), P = Array.from({ length: 70 }, () => ({ x: c.width / 2, y: c.height * .6, vx: (Math.random() - .5) * 14, vy: -Math.random() * 14 - 4, col: Math.random() < .5 ? '#00f0ff' : '#bd00ff', l: 60 }));
+    (function f() {
+        x.clearRect(0, 0, c.width, c.height); let a = 0;
+        P.forEach(p => { if (p.l-- > 0) { a = 1; p.x += p.vx; p.y += p.vy; p.vy += .45; x.globalAlpha = p.l / 60; x.fillStyle = p.col; x.fillRect(p.x, p.y, 5, 5); } });
+        a ? requestAnimationFrame(f) : c.remove();
+    })();
+}
+const _tg = toggle; toggle = n => { const was = done(n); _tg(n); if (!was) { boom(); navigator.vibrate?.(60); } };
+
+document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => {
+    if (b.dataset.v == 'cap') renderCap();
+    if (b.dataset.v == 'ref') renderRef();
+}));
+
+const _ol = window.onload;
+window.onload = () => {
+    _ol();
+    const q = document.querySelector('.quick-actions');
+    [['SCRIPT PARRAINAGE', "Écris-moi 3 messages courts et naturels pour proposer mon programme de parrainage à mes clients actuels, selon leur profil."],
+     ['BILAN CAP', "Analyse mon MRR, mon retard ou mon avance sur la trajectoire, et dis-moi les 3 actions les plus rentables cette semaine."]]
+        .forEach(([l, p]) => { const b = document.createElement('button'); b.className = 'quick-btn'; b.textContent = l; b.onclick = () => envoyerPromptPredefini(p); q.append(b); });
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SR) {
+        const m = document.createElement('button'); m.className = 'quick-btn mic'; m.textContent = 'VOIX';
+        m.onclick = () => { const r = new SR(); r.lang = 'fr-FR'; m.classList.add('rec'); r.onresult = e => { $('userInput').value = e.results[0][0].transcript; }; r.onend = () => m.classList.remove('rec'); r.start(); };
+        $('userInput').after(m);
+    }
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => { });
+    renderAlerts(); tick(); setInterval(tick, 60000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) { renderAlerts(); tick(); } });
 };
