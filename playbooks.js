@@ -6,13 +6,13 @@ const PB = {
         "Crée un lien de paiement récurrent (ex. Stripe Payment Link ou équivalent ; compare les frais) et teste-le avec 1 €.",
         "Prépare un devis/CGV minimal dans Google Docs : durée, résiliation à 30 jours, paiement d'avance chaque mois.",
         "Écris ta promesse en 1 ligne : « J'aide les [métier] de [zone] à recevoir plus d'appels depuis Google Maps »."] },
-    P1: { t: "Constituer ta liste de 100 prospects qualifiés", m: 150, o: "Google Sheet de 100 lignes (téléphone + problème n°1)", s: [
-        "Choisis 1 métier + 1 zone (30 km, 3-4 villes). Critères : un client rapporte plus de 300 €, le métier vit de Google Maps (plombier, chauffagiste, couvreur, électricien, paysagiste, garagiste).",
-        "Crée un Google Sheet « PROSPECTS » avec les colonnes : Entreprise, Ville, Téléphone, Site, Note, Nb avis, Nb photos, Lien Maps, Problème n°1, Statut, Dernier contact, Prochaine action.",
-        "Collecte. Manuel : Google Maps « métier + ville », ouvre chaque fiche et copie les infos (~1 min/fiche). Rapide : un outil d'extraction Google Maps (ex. Outscraper ou Apify, essai gratuit possible ; vérifie leurs CGU et le RGPD avant usage commercial). Base officielle : l'API « Recherche d'entreprises » (recherche-entreprises.api.gouv.fr) filtrée par code NAF + département, puis complète le téléphone via Maps.",
-        "Filtre : garde les fiches faibles (moins de 30 avis, ou pas de site, ou peu de photos, ou avis sans réponse). Vise 100 lignes, données professionnelles uniquement.",
-        "Remplis « Problème n°1 » pour chaque ligne en 30 s (« 0 réponse aux avis », « aucune photo récente », « pas de site »). C'est ta phrase d'accroche.",
-        "Trie par potentiel et marque les 10 premiers : ce sont tes cibles de demain."] },
+    P1: { t: "Constituer ta liste de 100 prospects qualifiés (tous métiers)", m: 150, o: "Google Sheet de 100 lignes avec score, téléphone et problème n°1", s: [
+        "Cible par critères, pas par métier : un commerce ou service local que les clients cherchent sur Google Maps (« près de moi »), avec un client qui rapporte au moins ~100 € ou revient souvent, et un patron joignable. Exemples : artisans, restaurants, coiffeurs, garages, cabinets de santé, commerces. Écarte ceux qui ne dépendent pas de la recherche locale (vente 100 % en ligne, uniquement recommandations).",
+        "Crée un Google Sheet « PROSPECTS » avec les colonnes : Entreprise, Métier, Ville, Téléphone, Site, Note, Nb avis, Nb photos, Lien Maps, Score (1-5), Problème n°1, Statut, Dernier contact, Prochaine action.",
+        "Collecte par lots d'un métier à la fois (2 à 3 métiers pour atteindre 100) : tes recherches, tes scripts et tes exemples restent cohérents. Manuel : Google Maps « métier + ville », ouvre chaque fiche et copie les infos (~1 min/fiche). Rapide : un outil d'extraction Google Maps (ex. Outscraper ou Apify, essai gratuit possible ; vérifie leurs CGU et le RGPD avant usage commercial). Base officielle : l'API « Recherche d'entreprises » (recherche-entreprises.api.gouv.fr) filtrée par code NAF + département, puis complète le téléphone via Maps.",
+        "Filtre : garde les fiches faibles (moins de 30 avis, ou pas de site, ou peu de photos, ou avis sans réponse). Données professionnelles uniquement.",
+        "Note chaque ligne : Problème n°1 (« 0 réponse aux avis », « aucune photo récente », « pas de site ») et Score de 1 à 5 (+1 par critère : cherché sur Maps, client à forte valeur, fiche faible, concurrents actifs, patron joignable).",
+        "Trie par score décroissant, garde les 100 meilleures lignes et marque les 10 premières : ce sont tes cibles de demain."] },
     P2: { t: "10 mini-audits + 10 vidéos de 60-90 s", m: 150, o: "10 vidéos prêtes à envoyer", s: [
         "Pour chacun des 10 prospects du haut de liste : capture sa fiche Maps et sa position sur « métier + ville » (navigation privée).",
         "Compare avec les 2 concurrents les mieux placés : nombre d'avis, note, photos, catégories, services, posts.",
