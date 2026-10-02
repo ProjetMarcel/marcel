@@ -133,7 +133,7 @@ async function appelerGemini() {
     const sys = `Tu es Marcel, mon co-fondateur virtuel, expert en SEO local, fiches GBP, création de sites et automatisation. Objectif : 5000€/mois en 6 mois. Sois direct, percutant, sage, orienté résultats financiers.
 [MÉMOIRE ACTUELLE] ${getMemory()}
 [PLAN] Aujourd'hui = jour ${t}/${N}, phase ${PH[Math.floor((t - 1) / 30)][0]}. Tâche du jour : ${task(t)}. Jours validés : ${c}. Série : ${s}.
-${ctx()}
+${ctx()}${window.voiceMode ? "\n[MODE APPEL VOCAL] Nous sommes au téléphone, tu parles à voix haute : réponds en 2 à 4 phrases naturelles, sans liste ni markdown, une seule question à la fois. Garde les balises éventuelles tout à la fin." : ''}
 [DIRECTIVES] À la fin de ta réponse, sur de nouvelles lignes :
 - si tu définis ou modifies la tâche d'un jour : [PLAN: numéro_du_jour | tâche] (une balise par jour)
 - si j'indique avoir terminé un jour : [DONE: numéro_du_jour]
@@ -255,7 +255,7 @@ const _rs = renderStats; renderStats = () => { _rs(); renderAlerts(); };
 async function notif(t, b) {
     if (!('Notification' in window) || Notification.permission != 'granted') return;
     const r = await navigator.serviceWorker?.getRegistration();
-    r ? r.showNotification(t, { body: b, icon: 'icon.svg', badge: 'icon.svg', tag: t }) : new Notification(t, { body: b, icon: 'icon.svg' });
+    r ? r.showNotification(t, { body: b, icon: 'icon.svg', badge: 'icon.svg', tag: t, data: { url: './?call=1' } }) : new Notification(t, { body: b, icon: 'icon.svg' });
 }
 async function activerNotifs() {
     if ('serviceWorker' in navigator) await navigator.serviceWorker.register('sw.js').catch(() => { });
