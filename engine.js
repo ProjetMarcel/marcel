@@ -235,7 +235,7 @@ window.onload = () => {
     const add = (l, fn) => { const b = document.createElement('button'); b.className = 'quick-btn'; b.textContent = l; b.onclick = fn; q.append(b); return b; };
     add('COUP DE GÉNIE', () => envoyerPromptPredefini("Sors-moi un coup de génie non conventionnel adapté à ma situation chiffrée du jour (jamais déjà proposé). Donne l'idée, pourquoi elle marche, la marche à suivre en 5 étapes que je lance aujourd'hui et l'indicateur de réussite. Reste légal et honnête. Termine par [IDEE: …]."));
     add('RÉVISER LE PLAN', reviser);
-    add('VEILLE WEB', () => { window.grounded = true; envoyerPromptPredefini(`Fais ma veille : cherche sur le web ce qui a changé ces 7 derniers jours et qui m'est utile (changements Google Business Profile, tendances de recherche locales, ouvertures, événements, aides ou subventions pour les commerces${cfg.zone ? ' dans ma zone : ' + cfg.zone : ''}). Donne 3 à 5 opportunités concrètes avec l'action à mener et la source.`); });
+    add('VEILLE WEB', () => veille());
     const rb = add('', () => { localStorage.setItem('marcel_revue_off', localStorage.getItem('marcel_revue_off') == '1' ? '0' : '1'); lab(); });
     const lab = () => rb.textContent = 'REVUE AUTO : ' + (localStorage.getItem('marcel_revue_off') == '1' ? 'OFF' : 'ON'); lab();
     renderStats();
