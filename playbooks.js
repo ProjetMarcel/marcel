@@ -1,10 +1,10 @@
 // MARCEL v7 : playbooks = marche à suivre précise pour chaque journée
 const PB = {
-    P0: { t: "Définir ton offre, ton prix et ton lien de paiement", m: 90, o: "Offre d'une page + lien de paiement testé", s: [
-        "Définis UNE offre simple : « Visibilité locale » = optimisation de la fiche Google + 4 posts/mois + gestion des avis + rapport mensuel. Prix mensuel fixe (utilise ton prix moyen de l'onglet CAP €), premier mois testable sans engagement long.",
-        "Rédige sur 1 page : ce qui est inclus, ce qui ne l'est pas, délai de mise en place (7 jours), résultats suivis (appels, itinéraires, clics, avis). Ne promets jamais une position précise sur Google.",
-        "Crée un lien de paiement récurrent (ex. Stripe Payment Link ou équivalent ; compare les frais) et teste-le avec 1 €.",
-        "Prépare un devis/CGV minimal dans Google Docs : durée, résiliation à 30 jours, paiement d'avance chaque mois.",
+    P0: { t: "Verrouiller ton offre, tes tarifs et tes liens de paiement", m: 90, o: "Offre d'une page + 2 liens de paiement testés (mensuel et trimestre)", s: [
+        "Fige l'offre : gestion professionnelle de la fiche Google Business Profile = optimisation initiale + mises à jour régulières + 4 posts/mois + gestion des avis + rapport mensuel. Elle vaut pour tous les secteurs locaux.",
+        "Fige les 2 tarifs : 150 €/mois, ou 390 € le trimestre payé d'un coup (soit 130 €/mois, 60 € d'économie par trimestre). Présente toujours le trimestre en premier : cash d'avance et 3 mois de rétention.",
+        "Crée 2 liens de paiement (ex. Stripe Payment Link ou équivalent ; compare les frais) : abonnement mensuel 150 € et paiement trimestriel 390 €. Teste-les avec 1 €.",
+        "Prépare devis et CGV dans Google Docs : durée ferme de 3 mois pour le trimestre, résiliation à 30 jours pour le mensuel, paiement d'avance. Ne promets jamais une position précise sur Google.",
         "Écris ta promesse en 1 ligne : « J'aide les [métier] de [zone] à recevoir plus d'appels depuis Google Maps »."] },
     P1: { t: "Constituer ta liste de 100 prospects qualifiés (tous métiers)", m: 150, o: "Google Sheet de 100 lignes avec score, téléphone et problème n°1", s: [
         "Cible par critères, pas par métier : un commerce ou service local que les clients cherchent sur Google Maps (« près de moi »), avec un client qui rapporte au moins ~100 € ou revient souvent, et un patron joignable. Exemples : artisans, restaurants, coiffeurs, garages, cabinets de santé, commerces. Écarte ceux qui ne dépendent pas de la recherche locale (vente 100 % en ligne, uniquement recommandations).",
@@ -63,16 +63,23 @@ const PB = {
         "Mets à jour le MRR dans CAP € et calcule tes vrais taux (réponse, RDV, signature).",
         "Trouve le goulot : peu de réponses = liste ou accroche ; RDV sans signature = offre ou prix ; peu de RDV = volume de contacts.",
         "Demande à Marcel le bilan CAP et 1 ajustement pour la semaine.",
-        "Valide la semaine et repose-toi."] }
+        "Valide la semaine et repose-toi."] },
+    P11: { t: "Renouvellements et passage au trimestre", m: 60, o: "Clients à renouveler contactés, lien 390 € envoyé", s: [
+        "Ouvre CAP € : repère les trimestriels dont le renouvellement tombe dans 14 jours et les mensuels clients depuis plus de 2 mois.",
+        "Pour chacun, prépare un mini-bilan chiffré (appels, itinéraires, clics, nouveaux avis) depuis les statistiques « Performance » de la fiche.",
+        "Appelle (5 min) : « Voici ce que votre fiche a généré. Pour continuer, le trimestre est à 390 € au lieu de 450 € (130 €/mois). »",
+        "Envoie le lien de paiement 390 € par SMS dans l'heure qui suit l'appel.",
+        "Termine par : « Un confrère à qui ça servirait ? » et rappelle le parrainage.",
+        "Note le résultat dans CAP € : renouvelé, passé au trimestre ou perdu (avec la raison)."] },
 };
 const RAMP = ['P1', 'P0', 'P2', 'P3', 'P8', 'P3', 'P10'];            // jours 1 à 7
 const WK = ['P3', 'P7', 'P8', 'P5', 'P9', 'P6', 'P10'];             // ensuite, rythme hebdomadaire
-const pid = n => n <= 7 ? RAMP[n - 1] : WK[(n - 1) % 7];
+const pid = n => (window.pidAdaptive && window.pidAdaptive(n)) || (n <= 7 ? RAMP[n - 1] : WK[(n - 1) % 7]);
 
 function pbHTML(n) {
-    const p = PB[pid(n)];
-    if (!p || plan[n]?.t) return '';
-    const c = plan[n]?.c || [], k = c.filter(Boolean).length;
+    const o = plan[n], p = o?.s?.length ? { t: o.t, m: o.m || 60, o: 'défini par Marcel', s: o.s } : (o?.t ? null : PB[pid(n)]);
+    if (!p) return '';
+    const c = o?.c || [], k = c.filter(Boolean).length;
     return `<div class="pb"><div class="pbh">⏱ ${p.m} min · Livrable : ${esc(p.o)} · ${k}/${p.s.length}</div>
 ${p.s.map((s, i) => `<div class="stp ${c[i] ? 'on' : ''}" onclick="step(${n},${i})"><i></i><span>${esc(s)}</span></div>`).join('')}
 <button class="quick-btn" onclick="coach(${n})">DEMANDER À MARCEL DE ME GUIDER</button></div>`;
@@ -82,7 +89,7 @@ function step(n, i) {
     navigator.vibrate?.(20); renderPlan(false);
 }
 function coach(n) {
-    const p = PB[pid(n)];
+    const o = plan[n], p = o?.s?.length ? { t: o.t, s: o.s } : PB[pid(n)] || { t: task(n), s: [] };
     go('chat');
     envoyerPromptPredefini(`Guide-moi sur la mission du jour ${n} : « ${p.t} ». Étapes prévues : ${p.s.map((s, i) => `${i + 1}) ${s}`).join(' ')} Donne-moi la première action concrète à faire maintenant (outil, réglage, texte exact à copier), puis attends mon retour avant l'étape suivante.`);
 }
