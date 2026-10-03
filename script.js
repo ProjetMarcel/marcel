@@ -115,14 +115,15 @@ function verifierEntree(e) { if (e.key === 'Enter') envoyerMessage(); }
 
 // Applique les balises de Marcel (PLAN, DONE, MEMO_UPDATE) et les retire du texte affiché
 function tags(x) {
-    x = x.replace(/\[PLAN:\s*(\d+)\s*\|\s*([^\]]+)\]/g, (_, n, v) => { if (n >= 1 && n <= N) setPlan(+n, { t: v.trim() }); return ''; });
+    if (window.tagsExtra) x = window.tagsExtra(x);
+    x = x.replace(/\[PLAN:\s*(\d+)\s*\|\s*([^\]|]+?)\s*(?:\|\s*([^\]]+))?\]/g, (_, n, v, st) => { if (n >= 1 && n <= N) setPlan(+n, { t: v.trim(), s: st ? st.split(';').map(z => z.trim()).filter(Boolean) : undefined, c: [] }); return ''; });
     x = x.replace(/\[DONE:\s*(\d+)\s*\]/g, (_, n) => { if (n >= 1 && n <= N) setPlan(+n, { d: true }); return ''; });
     const i = x.indexOf('[MEMO_UPDATE:');
     if (i > -1) {
         const j = x.lastIndexOf(']');
         if (j > i) { localStorage.setItem('marcel_memory', x.slice(i + 13, j).trim()); x = x.slice(0, i) + x.slice(j + 1); }
     }
-    renderPlan(false); renderStats();
+    renderPlan(false); renderStats(); window.afterTags?.();
     return x.trim();
 }
 
@@ -130,13 +131,16 @@ async function appelerGemini() {
     const key = localStorage.getItem('marcel_api_key');
     if (!key) throw new Error("Clé API manquante. Clique sur 'CORE LINK' en haut pour la configurer.");
     const { t, c, s } = stats();
-    const sys = `Tu es Marcel, mon co-fondateur virtuel, expert en SEO local, fiches GBP, création de sites et automatisation. Objectif : 5000€/mois en 6 mois. Sois direct, percutant, sage, orienté résultats financiers.
+    const base = window.persona ? window.persona() : "Tu es Marcel, mon co-fondateur virtuel, expert en SEO local, fiches GBP, création de sites et automatisation. Objectif : 5000€/mois. Sois direct, percutant, orienté résultats.";
+    const sys = `${base}
 [MÉMOIRE ACTUELLE] ${getMemory()}
 [PLAN] Aujourd'hui = jour ${t}/${N}, phase ${PH[Math.floor((t - 1) / 30)][0]}. Tâche du jour : ${task(t)}. Jours validés : ${c}. Série : ${s}.
 ${ctx()}${window.voiceMode ? "\n[MODE APPEL VOCAL] Nous sommes au téléphone, tu parles à voix haute : réponds en 2 à 4 phrases naturelles, sans liste ni markdown, une seule question à la fois. Garde les balises éventuelles tout à la fin." : ''}
-[DIRECTIVES] À la fin de ta réponse, sur de nouvelles lignes :
-- si tu définis ou modifies la tâche d'un jour : [PLAN: numéro_du_jour | tâche] (une balise par jour)
+[DIRECTIVES] À la fin de ta réponse, sur de nouvelles lignes (ces balises sont lues par l'appli puis masquées) :
+- définir ou modifier un jour : [PLAN: numéro_du_jour | titre | étape 1 ; étape 2 ; étape 3] (une balise par jour, étapes concrètes avec outil et texte à copier)
 - si j'indique avoir terminé un jour : [DONE: numéro_du_jour]
+- une idée non conventionnelle que tu proposes : [IDEE: titre court]
+- un défi mesurable que tu me lances : [DEFI: texte avec échéance]
 - TOUJOURS : [MEMO_UPDATE: tes notes actualisées, actions faites, résultats, prochaine étape]`;
     let h = chat.slice(-20);
     while (h.length && h[0].r != 'user') h.shift();
@@ -147,14 +151,19 @@ ${ctx()}${window.voiceMode ? "\n[MODE APPEL VOCAL] Nous sommes au téléphone, t
             const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-                body: JSON.stringify({ systemInstruction: { parts: [{ text: sys }] }, contents })
+                body: JSON.stringify({ systemInstruction: { parts: [{ text: sys }] }, contents, ...(window.grounded ? { tools: [{ google_search: {} }] } : {}) })
             });
             const d = await r.json();
             if (d.error) { err = new Error(d.error.message); continue; }
-            const x = d.candidates?.[0]?.content?.parts?.map(p => p.text).join('');
-            if (x) return tags(x);
+            let x = d.candidates?.[0]?.content?.parts?.map(p => p.text).join('');
+            if (x) {
+                const src = (d.candidates[0].groundingMetadata?.groundingChunks || []).map(g => g.web).filter(Boolean).slice(0, 5);
+                window.grounded = false; x = tags(x);
+                return src.length ? x + '\n\nSources :\n' + src.map(g => '- ' + (g.title || g.uri) + ' ' + g.uri).join('\n') : x;
+            }
         } catch (e) { err = e; }
     }
+    if (window.grounded) { window.grounded = false; return appelerGemini(); }   // la recherche web a échoué : on réessaie sans
     throw err || new Error("Tous les modèles sont temporairement indisponibles.");
 }
 
