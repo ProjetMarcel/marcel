@@ -39,7 +39,7 @@
 
     <nav>
         <button class="on" data-v="chat">CHAT</button>
-        <button data-v="plan">PLAN</button><button data-v="cap">CAP €</button><button data-v="ref">PARRAINS</button>
+        <button data-v="plan">PLAN</button><button data-v="cap">CAP €</button><button data-v="ref">PARRAINS</button><button data-v="rad">RADAR</button>
         <button data-v="hist">HISTO</button>
         <i id="ind"></i>
     </nav>
@@ -70,6 +70,7 @@
 
         <section id="v-cap" class="view"></section>
         <section id="v-ref" class="view"></section>
+        <section id="v-rad" class="view"></section>
         <section id="v-hist" class="view">
             <div class="tools">
                 <input type="text" id="hs" placeholder="Rechercher dans l'historique..." oninput="renderHist()">
@@ -81,7 +82,9 @@
     </main>
 
     <script src="playbooks.js?v=1"></script>
-    <script src="script.js?v=8"></script>
+    <script src="script.js?v=9"></script>
     <script src="callmode.js?v=1"></script>
+    <script src="engine.js?v=1"></script>
+    <script src="radar.js?v=1"></script>
 </body>
 </html>
