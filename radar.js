@@ -38,8 +38,8 @@ function veille() {
 }
 
 /* canal de notifications ntfy */
-function ntGen() { const a = new Uint8Array(8); crypto.getRandomValues(a); localStorage.setItem('marcel_ntfy', 'marcel-' + [...a].map(x => x.toString(16).padStart(2, '0')).join('')); renderRadar(); }
-function ntSave() { localStorage.setItem('marcel_ntfy', $('nt').value.trim()); }
+function ntGen() { const a = new Uint8Array(8); crypto.getRandomValues(a); localStorage.setItem('marcel_ntfy', 'marcel-' + [...a].map(x => x.toString(16).padStart(2, '0')).join('')); renderRadar(); if (window.ntArm) ntArm(true); }
+function ntSave() { localStorage.setItem('marcel_ntfy', $('nt').value.trim()); if (window.ntArm) ntArm(true); }
 function ntCopy() { ntSave(); navigator.clipboard?.writeText(localStorage.getItem('marcel_ntfy') || ''); alert('Nom du canal copié. Colle-le dans le secret NTFY_TOPIC de GitHub.'); }
 async function ntTest() {
     ntSave(); const t = localStorage.getItem('marcel_ntfy'); if (!t) return alert("Génère d'abord un nom de canal.");
@@ -72,9 +72,11 @@ ${R.veille ? `<p class="ph">${esc(R.veille)}</p>` : ''}
         const sk = Object.keys(ss);
         if (sk.length) h += `<div class="panel"><div class="dh"><b>CE QUI MARCHE POUR TOI</b><span>apprentissage</span></div>${sk.map(k => `<p class="note">${esc(k)} : ${ss[k].c} contacté(s), ${ss[k].s} signé(s)</p>`).join('')}</div>`;
     }
-    h += `<div class="panel"><div class="dh"><b>ALERTES SUR LE TÉLÉPHONE</b><span>appli fermée</span></div>
-<p class="note">Une appli web fermée ne peut pas se réveiller seule. Le serveur GitHub t'envoie donc un message via ntfy à 9 h et 18 h ; en le touchant, l'appli s'ouvre sur l'appel de Marcel. 1) Installe l'app ntfy. 2) Abonne-toi au canal ci-dessous. 3) Mets le même nom dans le secret NTFY_TOPIC du dépôt (voir le guide).</p>
-<div class="row"><input type="text" id="nt" value="${esc(nt)}" placeholder="nom du canal (secret)" onchange="ntSave()"><button class="quick-btn" onclick="ntGen()">GÉNÉRER</button><button class="quick-btn" onclick="ntCopy()">COPIER</button><button class="quick-btn" onclick="ntTest()">TESTER</button></div></div></div>`;
+    h += `<div class="panel"><div class="dh"><b>ALERTES SUR LE TÉLÉPHONE</b><span>${NT_ON() ? 'ACTIVES' : 'COUPÉES'}</span></div>
+<p class="note">Une appli web fermée ne peut pas se réveiller seule, et GitHub lance ses tâches avec des retards de plusieurs heures. Marcel programme donc lui-même chez ntfy tes alertes de 9 h et 18 h pour les 3 prochains jours, à l'heure exacte. Ouvre l'appli au moins une fois tous les 3 jours pour les renouveler. En touchant l'alerte, l'appli s'ouvre sur l'appel de Marcel. 1) Installe l'app ntfy. 2) Abonne-toi au canal ci-dessous. 3) Mets le même nom dans le secret NTFY_TOPIC du dépôt (rattrapage serveur).</p>
+<p class="ph" id="ntst">${esc(ntStatus || 'Pas encore programmé : génère un canal.')}</p>
+<div class="row"><input type="text" id="nt" value="${esc(nt)}" placeholder="nom du canal (secret)" onchange="ntSave()"><button class="quick-btn" onclick="ntGen()">GÉNÉRER</button><button class="quick-btn" onclick="ntCopy()">COPIER</button></div>
+<div class="row"><button class="quick-btn" onclick="ntTest()">TEST IMMÉDIAT</button><button class="quick-btn" onclick="ntTestLater()">TEST DANS 30 S</button><button class="quick-btn" onclick="ntArm(true)">REPROGRAMMER</button><button class="quick-btn" onclick="ntToggle()">${NT_ON() ? 'COUPER' : 'RÉACTIVER'}</button></div></div></div>`;
     el.innerHTML = h; const s = el.querySelector('.scroll'); if (s) s.scrollTop = keep;
 }
 
