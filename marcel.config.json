@@ -2,6 +2,7 @@
   "startDate": "2026-10-03",
   "appUrl": "",
   "zone": "Vosges",
+  "heures": { "briefing": 9, "bilan": 18 },
   "radar": {
     "departements": ["88"],
     "jours": 45,
