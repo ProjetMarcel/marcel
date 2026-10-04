@@ -1,11 +1,11 @@
 name: marcel
 on:
   schedule:
-    # 2 horaires par créneau : le script ne s'exécute que si l'heure de Paris correspond (gère l'heure d'été/hiver)
-    - cron: '0 7 * * *'
-    - cron: '0 8 * * *'
-    - cron: '0 16 * * *'
-    - cron: '0 17 * * *'
+    # GitHub lance ces tâches avec du retard (parfois plusieurs heures) et en saute certaines : on multiplie les déclenchements
+    # dans la fenêtre du briefing (9-12 h Paris) et du bilan (18-21 h Paris). Le script ne fait rien hors fenêtre
+    # et ne renvoie jamais une alerte déjà partie. Minutes 7 et 37 : GitHub est moins chargé hors de l'heure pile.
+    - cron: '7,37 7-10 * * *'
+    - cron: '7,37 16-19 * * *'
   workflow_dispatch:
     inputs:
       mode:
@@ -19,11 +19,12 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Vérifier les fichiers
         run: |
           node --version
