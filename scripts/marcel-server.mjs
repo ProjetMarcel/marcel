@@ -135,7 +135,8 @@ export function compose(kind, cfg, rad, today) {
         lines.push(`Bilan du jour ${n} : contacts logués ? journée validée ? Deux minutes avec Marcel.`);
         if (hot) lines.push(`${hot} piste${hot > 1 ? 's' : ''} fraîche${hot > 1 ? 's' : ''} au radar n'${hot > 1 ? 'ont' : 'a'} pas été vue${hot > 1 ? 's' : ''}.`);
     } else lines.push('Test : si tu lis ceci appli fermée, les alertes serveur fonctionnent.');
-    return { title: kind == 'bilan' ? `MARCEL · Bilan J${n}` : `MARCEL · Jour ${n}`, message: lines.filter(Boolean).join('\n'), click };
+    const title = kind == 'bilan' ? `MARCEL - Bilan J${n}` : kind == 'briefing' ? `MARCEL - Jour ${n}` : 'MARCEL - Test serveur';
+    return { title, message: lines.filter(Boolean).join('\n'), click };
 }
 
 /* ---------- envoi ---------- */
@@ -155,6 +156,16 @@ async function ntfy(m) {
     note(`✅ Message accepté par ntfy (code ${r.status}). S'il n'arrive pas sur le téléphone : l'app ntfy n'est pas abonnée à CE nom exact de canal, ou ses notifications sont bloquées (permissions, économie de batterie).`);
     return true;
 }
+// Vérifie dans l'historique récent de ntfy si cette alerte est déjà partie (programmée par l'appli ou envoyée plus tôt)
+export async function alreadySent(m) {
+    const topic = (E.NTFY_TOPIC || '').trim(); if (!topic) return false;
+    try {
+        const r = await fetch(`https://ntfy.sh/${encodeURIComponent(topic)}/json?poll=1&since=12h`, { signal: AbortSignal.timeout(15000) });
+        if (!r.ok) { log('historique ntfy illisible', r.status); return false; }
+        const msgs = (await r.text()).split('\n').filter(Boolean).map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(x => x && x.event == 'message');
+        return msgs.some(x => x.title === m.title);
+    } catch (e) { log('vérification ntfy impossible :', e.message); return false; }     // dans le doute on envoie : mieux vaut un doublon qu'un oubli
+}
 async function appel(m) {
     if (!(E.TWILIO_SID && E.TWILIO_TOKEN && E.TWILIO_FROM && E.MY_PHONE)) return false;
     const x = s => s.replace(/[<>&"']/g, ' ');
@@ -164,19 +175,24 @@ async function appel(m) {
 }
 
 export async function main(mode = 'auto') {
-    const cfg = loadCfg(), { ymd, h } = paris();
+    const cfg = loadCfg(), { ymd, h } = paris(), auto = mode == 'auto';
+    const bh = cfg.heures?.briefing ?? 9, sh = cfg.heures?.bilan ?? 18;
+    // GitHub lance ses tâches avec des retards pouvant dépasser une heure : on travaille sur des fenêtres de 3 h, pas sur une heure pile
     let kind = mode;
-    if (mode == 'auto') kind = h == 9 ? 'briefing' : h == 18 ? 'bilan' : null;
-    log(`mode ${mode}, Paris ${ymd} ${h} h → ${kind || 'rien à faire'}`);
+    if (auto) kind = h >= bh && h < bh + 3 ? 'briefing' : h >= sh && h < sh + 3 ? 'bilan' : null;
+    log(`mode ${mode}, Paris ${ymd} ${h} h → ${kind || 'hors fenêtre, rien à faire'}`);
     if (!kind) return;
-    const prevF = new URL('radar.json', ROOT);
-    const rad = kind == 'test' ? null : kind == 'bilan' ? (existsSync(prevF) ? JSON.parse(readFileSync(prevF, 'utf8')) : null) : await radar(cfg, ymd);
+    const radF = new URL('radar.json', ROOT);
+    let rad = existsSync(radF) ? JSON.parse(readFileSync(radF, 'utf8')) : null;
+    const stale = !rad?.generated || paris(new Date(rad.generated)).ymd !== ymd;
+    if (kind == 'radar' || (kind == 'briefing' && (!auto || stale))) rad = await radar(cfg, ymd);
     if (kind == 'radar') return;
-    const m = compose(kind, cfg, rad, ymd);
+    const m = compose(kind, cfg, kind == 'test' ? null : rad, ymd);
+    if (auto && await alreadySent(m)) { note(`✅ « ${m.title} » est déjà parti aujourd'hui (programmé par l'appli ou exécution précédente) : rien à renvoyer.`); return; }
+    if (auto) note(`Rattrapage : « ${m.title} » n'est pas encore parti, envoi maintenant.`);
     await ntfy(m);
     if (kind == 'briefing') await appel(m);
 }
 // Lancement direct : on compare les chemins RÉELS (un lien symbolique faisait échouer l'ancien test, sans aucun message)
 const isMain = (() => { try { return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url)); } catch { return /marcel-server\.mjs$/.test(process.argv[1] || ''); } })();
 if (isMain) { console.log('[marcel] démarrage'); main(process.argv[2] || 'auto').catch(e => { console.error(e); process.exit(1); }); }
-
